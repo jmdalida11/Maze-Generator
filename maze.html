@@ -1,0 +1,239 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+ </head>
+ <body>
+	
+	<canvas id="myCanvas" width="600" height="600" style="border: 1px solid black"></canvas>
+	
+	
+	<script>
+		
+		
+		var canvas = document.getElementById('myCanvas');
+		var context = canvas.getContext('2d');
+		
+		var scale = 25;
+		
+		var col = Math.floor(canvas.width / scale);
+		var row = Math.floor(canvas.height / scale);
+		
+		
+		var grids = [];
+		var current; 
+		var stack = [];
+		
+		function init(){
+			
+			for(var i = 0; i < col; i++){
+				grids[i] = [];
+				for(var j = 0; j < row; j++){
+					grids[i][j] = new Grid(i * scale,j * scale);
+				}
+			}
+			console.log(grids);
+			
+			current = grids[0][0];
+			
+			current.visited = true;
+			stack.push(current);
+			addNeighbors();
+			
+		
+		}
+		
+		function addNeighbors(){
+			
+			for(var i=0;i<row;i++){
+				for(var j=0;j<col;j++){
+					
+					//top
+					if(i != 0){
+						grids[i][j].neighbors.push(grids[i-1][j]);
+					}else{
+						grids[i][j].neighbors.push(null);
+					}
+					
+					//right
+					if(j != col-1){
+						grids[i][j].neighbors.push(grids[i][j+1]);
+					}else{
+						grids[i][j].neighbors.push(null);
+					}
+					
+					
+					//bottom
+					if(i != row-1){
+						grids[i][j].neighbors.push(grids[i+1][j]);
+					}else{
+						grids[i][j].neighbors.push(null);
+					}
+					
+					//left
+					if(j != 0){
+						grids[i][j].neighbors.push(grids[i][j-1]);
+					}else{
+						grids[i][j].neighbors.push(null);
+					}
+	
+					
+				}
+			}
+		
+		}
+		
+		function update(){
+			
+			if(current.haveNeighborsToVisit()){
+				current = current.visit();
+				current.visited = true;
+				stack.push(current);
+				
+			}else if(stack.length > 0){
+				current = stack.pop();
+		
+			}
+		
+		}
+		
+		function render(){
+		
+			context.clearRect(0,0,canvas.width,canvas.height);
+			
+			context.fillStyle = 'white';
+			context.fillRect(0,0,canvas.width,canvas.height);
+			
+			for(var i = 0; i < col; i++){
+				for(var j = 0; j < row; j++){
+					grids[i][j].render();
+				}
+			}
+			
+			
+		}
+		
+		init();
+		setInterval(function(){
+			
+			update();
+			render();
+			
+		}, 1000/30);
+		
+		function Grid(x,y){
+			
+			this.x = x;
+			this.y = y;
+			
+			this.index = x / scale + ',' + y / scale;
+			
+			this.neighbors = [];
+			
+			this.side = [true,true,true,true];
+			
+			this.visited = false;
+			
+			this.haveNeighborsToVisit = function(){
+				for(var i=0;i<this.neighbors.length;i++){
+					if(this.neighbors[i] != null){
+						if(!this.neighbors[i].visited){
+						return true;
+						}
+					}
+					
+				}
+				return false;
+			}
+			
+			this.visit = function(){
+				
+				
+					var notVisitedNeighbors = [];
+					
+					for(var i=0;i<this.neighbors.length;i++){
+						var currentNeighbor = this.neighbors[i];
+						if(currentNeighbor != null){
+							if(!currentNeighbor.visited){
+								notVisitedNeighbors.push(currentNeighbor);
+							}
+						}
+					}
+					var rand = Math.floor(Math.random() * notVisitedNeighbors.length);
+					
+					var toVisitNeighbor = notVisitedNeighbors[rand];
+					
+					if(toVisitNeighbor == this.neighbors[0]){
+					//left
+						this.side[3] = false;
+						toVisitNeighbor.side[1] = false;
+					}else if(toVisitNeighbor == this.neighbors[1]){
+					//bottom
+						this.side[2] = false;
+						toVisitNeighbor.side[0] = false;
+					}else if(toVisitNeighbor == this.neighbors[2]){
+					//right
+						this.side[1] = false;
+						toVisitNeighbor.side[3] = false;
+					}else if(toVisitNeighbor == this.neighbors[3]){
+					//top
+						this.side[0] = false;
+						toVisitNeighbor.side[2] = false;
+					}
+					
+					return toVisitNeighbor;
+			
+			}
+			
+			this.render = function(){
+			
+				//top to right
+				if(this.side[0]){
+					context.beginPath();
+					context.moveTo(this.x,this.y);
+					context.lineTo(this.x + scale, this.y);
+					context.stroke();
+				}
+				
+				//right to bottom
+				if(this.side[1]){
+					context.beginPath();
+					context.moveTo(this.x + scale,this.y);
+					context.lineTo(this.x + scale, this.y + scale);
+					context.stroke();
+				}
+				
+				//bottom to left
+				if(this.side[2]){
+					context.beginPath();
+					context.moveTo(this.x + scale,this.y + scale);
+					context.lineTo(this.x, this.y + scale);
+					context.stroke();
+				}
+				
+				//left to top
+				if(this.side[3]){
+					context.beginPath();
+					context.moveTo(this.x,this.y + scale);
+					context.lineTo(this.x, this.y);
+					context.stroke();
+				}
+				
+				if(this.visited){
+					context.fillStyle = 'blue';
+					context.fillRect(this.x,this.y,scale,scale);
+				}
+				
+				if(this == current){
+					context.fillStyle = 'green';
+					context.fillRect(this.x,this.y,scale,scale);
+				}
+				
+				
+			}
+			
+		}
+	
+	</script>
+	
+ </body>
+ </html>
